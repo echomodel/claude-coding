@@ -1,0 +1,122 @@
+#!/usr/bin/env python3
+#
+# Executable bit is tracked in git (git update-index --chmod=+x) so
+# this script is runnable immediately after clone — no chmod needed.
+#
+# Pure stdlib — no venv, no pip, no dependencies. Anyone with Python 3
+# can clone and run this.
+#
+import argparse
+import os
+import shutil
+import subprocess
+import sys
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parent
+AGENTS_DIR = REPO_ROOT / "agents"
+TESTS_DIR = REPO_ROOT / "tests" / "integration"
+AVAILABLE = [p.stem for p in AGENTS_DIR.glob("*.md")]
+
+
+def cmd_install(args):
+    """Install an agent to user or project scope."""
+    source = AGENTS_DIR / f"{args.name}.md"
+
+    # Check if the plugin is already installed — agent would be redundant
+    if not args.force:
+        cache_dir = Path.home() / ".claude" / "plugins" / "cache"
+        if cache_dir.exists():
+            for plugin_dir in cache_dir.iterdir():
+                candidate = plugin_dir / "agents" / f"{args.name}.md"
+                if candidate.exists():
+                    print(f"Error: {args.name} is already available via installed plugin "
+                          f"at {candidate.parent.parent.name}")
+                    print("The agent loads automatically in interactive sessions via /agents.")
+                    print("hint: use --force to install anyway (for CLI `claude --agent` usage)")
+                    sys.exit(1)
+
+    if args.local:
+        repo_path = args.local.resolve()
+        if not repo_path.is_dir():
+            print(f"Error: {repo_path} is not a directory")
+            sys.exit(1)
+        target_dir = repo_path / ".claude" / "agents"
+    else:
+        target_dir = Path.home() / ".claude" / "agents"
+
+    target_dir.mkdir(parents=True, exist_ok=True)
+    target = target_dir / f"{args.name}.md"
+    shutil.copy2(source, target)
+    print(f"Installed {args.name} → {target}")
+    print(f"Run: claude --agent {args.name}")
+
+
+def cmd_test(args):
+    """Run integration tests for an agent."""
+    # Map agent name to test directory (hyphens → underscores for Python)
+    test_dir = TESTS_DIR / args.name.replace("-", "_")
+    if not test_dir.is_dir():
+        print(f"Error: no tests found at {test_dir}")
+        sys.exit(1)
+
+    # Auto-create venv with test deps if missing
+    venv = REPO_ROOT / ".venv-test"
+    pytest_bin = venv / "bin" / "pytest"
+    if not pytest_bin.exists():
+        print("Setting up test venv (one-time)...")
+        subprocess.run([sys.executable, "-m", "venv", str(venv)], check=True)
+        subprocess.run([str(venv / "bin" / "pip"), "install", "-q",
+                        "pytest", "pytest-xdist"], check=True)
+
+    cmd = [str(pytest_bin), str(test_dir)]
+    if args.filter:
+        cmd.extend(["-k", args.filter])
+    if args.parallel:
+        cmd.extend(["-n", str(args.parallel)])
+
+    env = dict(os.environ)
+    if args.debug:
+        env["PRIVACY_GUARD_DEBUG"] = "1"
+
+    sys.exit(subprocess.run(cmd, env=env).returncode)
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Manage plugin agents: install for CLI use or run tests.",
+        epilog=f"Available agents: {', '.join(AVAILABLE)}",
+    )
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    # --- install ---
+    p_install = sub.add_parser(
+        "install", help="Install an agent to user or project scope")
+    p_install.add_argument("name", choices=AVAILABLE, help="Agent to install")
+    p_install.add_argument(
+        "--local", metavar="PATH", type=Path,
+        help="Install to a project's .claude/agents/ instead of ~/.claude/agents/")
+    p_install.add_argument(
+        "--force", action="store_true",
+        help="Install even if the plugin is already providing the agent")
+
+    # --- test ---
+    p_test = sub.add_parser(
+        "test", help="Run integration tests for an agent")
+    p_test.add_argument("name", choices=AVAILABLE, help="Agent to test")
+    p_test.add_argument(
+        "-k", "--filter",
+        help="pytest -k filter (test name or pattern)")
+    p_test.add_argument(
+        "-n", "--parallel", type=int,
+        help="Number of parallel workers (requires pytest-xdist)")
+    p_test.add_argument(
+        "--debug", action="store_true",
+        help="Write debug logs to /tmp/privacy-guard-tests/")
+
+    args = parser.parse_args()
+    {"install": cmd_install, "test": cmd_test}[args.command](args)
+
+
+if __name__ == "__main__":
+    main()
