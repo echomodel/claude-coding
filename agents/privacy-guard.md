@@ -53,8 +53,11 @@ personal information that should not be in public-facing artifacts.
 - Make git commits, pushes, or any write operations
 - Create, update, or comment on GitHub issues or PRs
 - Modify the repository in any way
-- Include the actual contents of PERSON.md in your report (only reference
-  categories and match counts)
+- Include the values you scanned for in your report — never list the
+  patterns from PERSON.md, only report the values you actually found.
+  Findings include matched values and locations so the caller can act
+  on them. Scan targets (the universe of values checked) stay private —
+  report only category names and counts, not the values themselves.
 - Suggest fixes — only report findings
 
 ### You ALWAYS:
@@ -420,11 +423,13 @@ FOUND: family name `ActualName` in tests/fixtures/contacts.json:17
 
 #### Category Summary
 
-After the detailed findings, provide a summary by category with
-patterns checked and findings count.
+After the detailed findings, provide a summary by category with the
+**number** of patterns checked and the number of findings. Do not list
+the actual pattern values — only counts. For example:
+"emails: 3 patterns checked, 1 finding" — not the actual emails.
 
 For categories with zero configured patterns, note them as
-"not configured" so the user knows the coverage gap.
+"not configured" so the caller knows the coverage gap.
 
 ### What NOT to include in the report
 
@@ -478,7 +483,7 @@ what you found. The goal is parseable output, not a straitjacket.
   "findings": [
     {
       "category": "emails | names | github | domains | employers | financial_providers | properties | cities | os_system | phone | employer_terms | private_repo_ref | contextual | author_mismatch | ...",
-      "pattern": "the pattern that triggered this (if from PERSON.md) or null",
+      "source": "person_md_frontmatter | person_md_body | prompt | builtin_pattern | os_runtime | contextual_judgment",
       "matched_value": "actual matched text",
       "location_type": "file_content | commit_message | commit_author | issue | pr | branch_name | tag_name | gitignored_file | stash | reflog | ...",
       "location": "path/to/file:line or commit:sha or issue:#N or branch:name",
@@ -510,8 +515,9 @@ what you found. The goal is parseable output, not a straitjacket.
   these when they fit** so that automated tests can match on known
   categories. You can also use your own category names for findings
   that don't map naturally to the suggested ones.
-- `pattern` is null for judgment-based/contextual findings that didn't
-  match a specific PERSON.md pattern
+- `source` indicates where you learned the matched value was sensitive.
+  Never include the actual PERSON.md pattern value — only the source
+  category. This prevents scan targets from leaking to the caller.
 - `note` is optional — use it for context on why something was flagged,
   especially for contextual or judgment-based findings
 - `warnings` captures anything noteworthy that isn't a finding —

@@ -231,37 +231,57 @@ gate before any content reaches GitHub.
 ### Subagent containment principle
 
 The privacy-guard agent exists to **contain** PII exposure. It reads
-sensitive data (PERSON.md, repo content) so the parent agent doesn't
-have to. This containment is only effective if the subagent's output
-does not leak actual sensitive values back into the parent agent's
-context.
+PERSON.md so the parent agent doesn't have to. The containment boundary
+is between what the agent **scanned for** (the universe of sensitive
+values from PERSON.md, OS discovery, built-in patterns) and what it
+**found** (specific values that already exist in the repo). These two
+categories have opposite output rules.
+
+**Matched values: MUST be reported.** The parent agent already has
+access to these values — they are in the code, commits, issues, or
+other artifacts the parent can see. The parent agent is responsible
+for fixing them, which it cannot do without knowing the specific value
+and its location. Reporting a matched value also makes the parent
+agent less likely to repeat it in the same session — being told "this
+email in src/config.py:42 is PII" is a corrective signal.
+
+**Scan targets: MUST NOT be reported.** The full set of values the
+agent checked for — every email, name, financial provider, etc. from
+PERSON.md — must never appear in the output. The parent agent has no
+need for these values and may not even be aware they exist. Exposing
+them expands the parent's knowledge of the user's personal information
+beyond what is already in the repo, increasing the risk of accidental
+inclusion in commits, issues, PR descriptions, or conversation.
 
 **Rules for subagent output:**
 
 - **Never echo PERSON.md contents** — the agent already has this rule
   (Hard Rules in the agent definition). The structured JSON and
-  human-readable report must not include the actual patterns being
-  scanned for.
-- **Findings report matched values, not scan targets** — a finding says
-  "found email in src/config.py:42" with the matched value. It does
-  not list all emails that were searched for.
-- **Scan metadata must be value-safe** — the structured output should
-  include metadata about what categories were scanned, how many values
-  per category, and what sources those values came from (PERSON.md
-  frontmatter, PERSON.md body, OS runtime, prompt, built-in patterns).
-  But it must report **counts and sources, not the values themselves**.
+  human-readable report must not include the patterns being scanned
+  for, only the values that were actually found.
+- **Findings include matched values and locations** — a finding says
+  "found email `user@example.com` in src/config.py:42". The parent
+  needs both the value and the location to take action.
+- **Scan metadata reports counts and sources, not values** — the
+  structured output should include metadata about what categories were
+  scanned, how many values per category, and where those values came
+  from (PERSON.md frontmatter, PERSON.md body, OS runtime, prompt,
+  built-in patterns). But it reports **counts and sources only**.
   For example: `{"category": "emails", "values_count": 3, "source":
-  "person_md_frontmatter"}` — not the actual email addresses.
+  "person_md_frontmatter"}` — not the actual email addresses that
+  were searched for.
 - **Attribution per finding** — each finding should indicate where the
   agent learned that the matched value was sensitive: `person_md_frontmatter`,
   `person_md_body`, `prompt`, `builtin_pattern`, `os_runtime`, or
   `contextual_judgment`. This enables tests to assert on *why* the agent
-  flagged something, not just *what* it flagged.
-- **The parent agent context is the threat model** — if a value appears
-  in the subagent's output, it enters the parent agent's context window.
-  The parent agent may then inadvertently include it in commits, issues,
-  PR descriptions, or conversation. The subagent must assume its output
-  will be consumed by an agent that handles public-facing artifacts.
+  flagged something, not just *what*.
+- **The parent agent context is the threat model** — any value in the
+  subagent's output enters the parent agent's context window. Matched
+  values are already in the parent's accessible scope (the repo), so
+  reporting them adds no new exposure. But scan targets from PERSON.md
+  may include values the parent has never seen — family names not in
+  any code, financial providers with no repo reference, etc. Leaking
+  those expands the parent's PII surface for no benefit.
 
 ### Safety rules for interactive sessions
 
