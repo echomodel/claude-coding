@@ -5,8 +5,6 @@ description: >-
   to push 1 or more commits to a remote from local workstation.
 model: sonnet
 maxTurns: 100
-skills:
-  - pre-publish-privacy-review
 tools:
   - Read
   - Bash(git log*)
@@ -253,7 +251,7 @@ Some personal values are common English words. Use judgment — consult
 the "Context and Judgment Guidance" section of PERSON.md for specific
 rules on names that are also common words (e.g., Grace, Hunter, Phoenix, Jordan).
 
-**Also apply judgment** per the pre-publish-privacy-review skill:
+**Also apply judgment:**
 - Look for contextual leaks that regex alone won't catch
 - Personal use-case descriptions framed around the user's workflow
 - References to personal projects consuming the repo

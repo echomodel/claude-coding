@@ -32,11 +32,11 @@ needs investigation against Claude docs and the `claude-plugin-creator`
 repo.
 
 **Can users run `claude --agent privacy-guard` from the CLI?**
-Only if the agent is in `~/.claude/agents/` (user scope) or
-`./.claude/agents/` (local scope). Whether plugin-installed agents
-resolve via `--agent` from a cold CLI start is unverified — they
-definitely appear in `/agents` during interactive sessions where the
-plugin is loaded.
+Yes — if the agent is in `~/.claude/agents/` (user scope) or
+`./.claude/agents/` (project scope), use the bare name. If loaded
+via a plugin, use the namespaced form:
+`--agent claude-coding-plugin:privacy-guard`. The `test_via_plugin.py`
+integration test verifies plugin-based discovery end-to-end.
 
 ## Architecture
 
@@ -110,15 +110,11 @@ planted PII and verify structured JSON output. Each test takes 1-3
 minutes.
 
 ```bash
-# One-time setup
-python3 -m venv .venv-test
-.venv-test/bin/pip install pytest pytest-xdist
-
 # Run one test at a time (recommended during development)
-.venv-test/bin/pytest tests/integration/privacy_guard/ -k <test_name>
+./agent test privacy-guard -k <test_name>
 
 # Run all in parallel (full regression)
-make test-privacy-guard
+./agent test privacy-guard
 ```
 
 Set `PRIVACY_GUARD_DEBUG=1` to write per-test logs to
@@ -129,7 +125,7 @@ Watch in real time: `tail -f /tmp/privacy-guard-tests/*.log`
 Integration tests are excluded from default `pytest` runs via
 `pytest.ini`. They only run when explicitly targeted.
 
-The `validate-privacy-guard` project skill (`.claude/skills/`) has
+The `debug-agent-tests` project skill (`.claude/skills/`) has
 the recommended test execution order and failure diagnosis steps.
 
 #### How agent tests work (symlink isolation)
