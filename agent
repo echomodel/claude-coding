@@ -19,9 +19,27 @@ TESTS_DIR = REPO_ROOT / "tests" / "integration"
 AVAILABLE = [p.stem for p in AGENTS_DIR.glob("*.md")]
 
 
+def _resolve_agent(name: str) -> Path:
+    """Resolve agent name to source file or exit."""
+    source = AGENTS_DIR / f"{name}.md"
+    if not source.is_file():
+        print(f"Error: no agent '{name}' found at {source}")
+        sys.exit(1)
+    return source
+
+
+def _resolve_test_dir(name: str) -> Path:
+    """Resolve agent name to test directory or exit."""
+    test_dir = TESTS_DIR / name.replace("-", "_")
+    if not test_dir.is_dir():
+        print(f"Error: no tests found at {test_dir}")
+        sys.exit(1)
+    return test_dir
+
+
 def cmd_install(args):
     """Install an agent to user or project scope."""
-    source = AGENTS_DIR / f"{args.name}.md"
+    source = _resolve_agent(args.name)
 
     # Check if the plugin is already installed — agent would be redundant
     if not args.force:
@@ -52,13 +70,25 @@ def cmd_install(args):
     print(f"Run: claude --agent {args.name}")
 
 
+def _resolve_test_dir(name: str) -> Path:
+    """Find test directory matching agent name (hyphens or underscores)."""
+    for variant in [name, name.replace("-", "_"), name.replace("_", "-")]:
+        candidate = TESTS_DIR / variant
+        if candidate.is_dir():
+            return candidate
+    # Glob fallback — match any subdir whose name starts the same
+    matches = [d for d in TESTS_DIR.iterdir()
+               if d.is_dir() and d.name.replace("-", "_") == name.replace("-", "_")]
+    if matches:
+        return matches[0]
+    print(f"Error: no test directory found for '{name}' under {TESTS_DIR}")
+    sys.exit(1)
+
+
 def cmd_test(args):
     """Run integration tests for an agent."""
-    # Map agent name to test directory (hyphens → underscores for Python)
-    test_dir = TESTS_DIR / args.name.replace("-", "_")
-    if not test_dir.is_dir():
-        print(f"Error: no tests found at {test_dir}")
-        sys.exit(1)
+    _resolve_agent(args.name)
+    test_dir = _resolve_test_dir(args.name)
 
     # Auto-create venv with test deps if missing
     venv = REPO_ROOT / ".venv-test"
@@ -92,7 +122,7 @@ def main():
     # --- install ---
     p_install = sub.add_parser(
         "install", help="Install an agent to user or project scope")
-    p_install.add_argument("name", choices=AVAILABLE, help="Agent to install")
+    p_install.add_argument("name", help="Agent to install")
     p_install.add_argument(
         "--local", metavar="PATH", type=Path,
         help="Install to a project's .claude/agents/ instead of ~/.claude/agents/")
@@ -103,7 +133,7 @@ def main():
     # --- test ---
     p_test = sub.add_parser(
         "test", help="Run integration tests for an agent")
-    p_test.add_argument("name", choices=AVAILABLE, help="Agent to test")
+    p_test.add_argument("name", help="Agent to test")
     p_test.add_argument(
         "-k", "--filter",
         help="pytest -k filter (test name or pattern)")
