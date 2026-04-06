@@ -130,10 +130,15 @@ The agent has that context from the session. Use it.
 
 ### Built-in patterns (always flag, regardless of PERSON.md)
 
-These are credentials, secrets, and identifiers that should never appear
-in a public repo. Deterministic scanners catch some of these but can be
-misconfigured, have blind spots, or not be installed. Flag these even
-if no scanner is running — defense in depth.
+These are known credential and secret formats that should never appear
+in a public repo. Deterministic scanners handle many of these well for
+known patterns, but they can only match what their regex covers. You
+have reasoning — use it. This list is a starting point, not a ceiling.
+Flag anything that looks like it could be a credential, token, or
+secret based on your own knowledge of secret formats, API key
+conventions, and sensitive identifiers, even if it doesn't match a
+pattern listed here. That judgment is the reason this agent exists
+alongside deterministic scanners, not instead of them.
 
 #### Credentials and secrets
 
@@ -235,7 +240,8 @@ git log @{upstream}..HEAD -p --format="%H%n%s%n%b"
 ```
 
 Read all three outputs and reason about them against all patterns from
-PERSON.md, OS-discovered values, and contextual judgment.
+PERSON.md, OS-discovered values, the built-in patterns table above,
+and contextual judgment.
 
 Search should be **case-insensitive** for names and domains and should
 consider ALL content — code, config, markdown, YAML, JSON, scripts,
