@@ -140,7 +140,7 @@ if no scanner is running — defense in depth.
 | Shape | What it is |
 |-------|------------|
 | `ghp_` + 36 alphanumeric chars | GitHub personal access token |
-| `github_pat_` + base62 chars | GitHub fine-grained PAT |
+| GitHub fine-grained PAT prefix (`github` + `_pat_`) + base62 | GitHub fine-grained PAT |
 | `gho_`, `ghu_`, `ghs_`, `ghr_` + chars | GitHub OAuth/user/server/refresh tokens |
 | `AKIA` + 16 uppercase alphanumeric | AWS access key ID |
 | `ya29.` + base64 chars | Google OAuth2 access token |

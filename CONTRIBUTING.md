@@ -187,6 +187,43 @@ it has the same structure and YAML frontmatter as a real PERSON.md but
 with no "this is a test" hints that might cause the agent to behave
 differently.
 
+#### Template repo and PII injection
+
+Tests use a template repo (`tests/fixtures/template_repo/`) containing
+~20 clean Python files — a realistic widget service with models, API
+handlers, tests, config, and docs. Each test copies the template into
+a temp git repo, then injects PII into specific locations (staged
+files, unstaged modifications, commit messages, code comments, config
+files, test fixtures). This ensures:
+
+- **Needle in a haystack** — PII is <5% of repo content, not 50%
+- **Varied injection points** — different tests put PII in different
+  file types and git states (staged, unstaged, committed)
+- **No scanner tripping** — credentials and secrets are built via
+  string concatenation at runtime (`"ghp_" + "a" * 36`), never
+  hardcoded as complete strings. This prevents precommit scanners
+  from flagging the test code itself.
+- **Same base, different injections** — all tests share the template
+  so adding new test scenarios is cheap
+
+The template files live in `tests/fixtures/template_repo/` as real
+files on disk (not zipped, not generated). Edit them directly to
+change the baseline content all tests inherit.
+
+#### Why we split agents instead of parameterizing
+
+Privacy-guard and privacy-audit are separate agents rather than modes
+of one agent. Claude Code agents receive inputs only through the
+prompt (unstructured text), the agent `.md` definition (static), and
+files the agent reads at runtime. There is no structured input
+contract — no typed parameters, no schema for inputs.
+
+In testing we observed that the prompt can override config file
+settings (a parent agent requesting "deep scan" overrode the user's
+`pre-push` config). Until Claude Code supports formal agent input
+schemas, splitting by usage pattern is more reliable than runtime
+parameterization. See the open issues for agent contract research.
+
 ## Release workflow
 
 1. Run `./build` to sync vendored skills

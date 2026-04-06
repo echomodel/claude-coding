@@ -61,6 +61,23 @@ def _write_person_md(path: Path) -> None:
 # Path to the agent source file in the repo under test
 AGENT_SOURCE = Path(__file__).resolve().parent.parent.parent.parent / "agents" / "privacy-guard.md"
 
+# Template repo with ~20 clean Python files for realistic test repos
+TEMPLATE_REPO = Path(__file__).resolve().parent.parent.parent / "fixtures" / "template_repo"
+
+
+def _populate_from_template(repo_dir: Path) -> None:
+    """Copy template repo files into a test repo and commit them."""
+    import shutil
+    for item in TEMPLATE_REPO.rglob("*"):
+        if item.is_file():
+            rel = item.relative_to(TEMPLATE_REPO)
+            dest = repo_dir / rel
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(item, dest)
+    subprocess.run(["git", "add", "."], cwd=repo_dir, check=True, capture_output=True)
+    subprocess.run(["git", "commit", "-m", "add widget service"],
+                   cwd=repo_dir, check=True, capture_output=True)
+
 REMOTE_NAME = "origin"
 REMOTE_BRANCH = "main"
 
