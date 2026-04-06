@@ -128,6 +128,66 @@ The hard part — and the reason this skill exists — is catching things like:
 These require understanding who the user is and what details are personal.
 The agent has that context from the session. Use it.
 
+### Built-in patterns (always flag, regardless of PERSON.md)
+
+These are credentials, secrets, and identifiers that should never appear
+in a public repo. Deterministic scanners catch some of these but can be
+misconfigured, have blind spots, or not be installed. Flag these even
+if no scanner is running — defense in depth.
+
+#### Credentials and secrets
+
+| Shape | What it is |
+|-------|------------|
+| `ghp_` + 36 alphanumeric chars | GitHub personal access token |
+| `github_pat_` + base62 chars | GitHub fine-grained PAT |
+| `gho_`, `ghu_`, `ghs_`, `ghr_` + chars | GitHub OAuth/user/server/refresh tokens |
+| `AKIA` + 16 uppercase alphanumeric | AWS access key ID |
+| `ya29.` + base64 chars | Google OAuth2 access token |
+| `AIza` + 35 chars | Google API key |
+| PEM block headers starting with `-----BEGIN` containing PRIVATE KEY | RSA, SSH, or PGP private key material |
+| `sk-` + 48 alphanumeric chars | OpenAI API key |
+| `sk-ant-` + chars | Anthropic API key |
+| `xoxb-`, `xoxp-`, `xoxs-` + chars | Slack bot/user/session tokens |
+| Strings matching `password`, `secret`, `token` in assignment context | Hardcoded credentials in config |
+| Base64 strings > 40 chars in config/env contexts | Possible encoded secrets |
+
+#### Cloud and service identifiers
+
+| Shape | What it is |
+|-------|------------|
+| 44-char base64 string in a Google Docs/Drive/Sheets URL | Google document ID |
+| `projects/` + alphanumeric or numeric project ID | GCP project reference |
+| 12-digit number in AWS ARN context (`arn:aws:...`) | AWS account ID |
+| UUID in config/env context (not code-generated) | Possible service/account identifier |
+
+#### Financial identifiers
+
+| Shape | What it is |
+|-------|------------|
+| 9 digits in XXX-XX-XXXX format | SSN |
+| XX-XXXXXXX format | EIN (employer tax ID) |
+| 13-19 digit numbers (esp. starting 4, 5, 3) | Credit/debit card numbers |
+| 9-digit ABA routing numbers | Bank routing numbers |
+
+#### Employer context (judgment required)
+
+Not all mentions of a company name are findings. Use context:
+
+| Context | Finding? | Why |
+|---------|----------|-----|
+| "uses Megacorp API for auth" | No | Vendor/product reference |
+| "our team at Megacorp ships this weekly" | Yes | User is on the team |
+| "deployed on Megacorp Cloud" | No | Infrastructure reference |
+| "my Megacorp badge stopped working" | Yes | User has employee badge |
+| "bought a Megacorp subscription" | No | Consumer reference |
+| "Megacorp's internal wiki says otherwise" | Yes | User has access to internal systems |
+| "Megacorp announced layoffs yesterday" | No | Public news reference |
+| "I got reassigned to Megacorp's infra org" | Yes | User works there and was reassigned |
+
+The key signal: does the sentence reveal that the **user works at** the
+company, or just that they **use its products**? Only the former is a finding.
+
 ### Check for untracked files
 
 ```bash
