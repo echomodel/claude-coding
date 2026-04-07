@@ -169,9 +169,7 @@ This approach:
   `tmp_path`), so parallel workers don't collide
 - **Cleans up automatically** — pytest removes temp dirs after the run
 
-The symlink setup is in `conftest.py` inside `_init_git_repo()`. It
-also symlinks the `pre-publish-privacy-review` skill if the agent's
-`skills:` frontmatter references it (pending — see open issues).
+The symlink setup is in `conftest.py` inside `_init_git_repo()`.
 
 #### What the tests use (fictitious data)
 
@@ -282,15 +280,14 @@ learn and what scope that learning applies to.
 
 Three reinforcement layers protect against accidental PII exposure:
 
-1. **Agent-scoped hooks** — Block `git push`, `gh pr create`, and direct
-   API calls at the harness level. The agent cannot bypass these.
-2. **Agent system prompts** — Non-negotiable workflow with hard stops
-   before any GitHub write.
-3. **Skills** — privacy-scan and publish-pull-request enforce mechanical
-   review steps.
-
-The publish-agent provides an independent clean-room review as the final
-gate before any content reaches GitHub.
+1. **Agent definitions** — privacy-guard scans diffs and unpushed
+   commits with LLM judgment. Built-in patterns catch credentials
+   and secrets. Employer context table catches contextual leaks.
+2. **Plugin hooks** — PostToolUse(Agent) verifies subagent input/output.
+   PreToolUse(Bash) blocks uncertified pushes. See
+   `docs/design/scan-cert-chain.md`.
+3. **Deterministic scanners** — git pre-commit hooks (consult precommit,
+   git-scan) catch known patterns with regex. Defense in depth.
 
 ### Subagent containment principle
 
@@ -351,14 +348,10 @@ inclusion in commits, issues, PR descriptions, or conversation.
 
 When working on this repo interactively (not through an agent):
 
-- **Never push directly.** All pushes go through `publish-agent`.
-- **Never create PRs directly.** Use the `publish-pull-request` skill
-  via `publish-agent`.
-- **Run privacy scan before any GitHub write.** Use `/privacy-scan` or
-  delegate to `publish-agent`.
-- **PULL-REQUEST.md workflow:** Commit it to the feature branch with
-  frontmatter (title, closes) and a markdown body. It's consumed by
-  `publish-pull-request` and dropped during squash-merge.
+- **Run privacy-guard before pushing.** Use `/safe-commit` or invoke
+  the privacy-guard agent directly.
+- **Review the scan output** before pushing. The agent reports findings
+  with matched values and locations.
 
 ## Context file architecture
 

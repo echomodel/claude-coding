@@ -13,13 +13,11 @@ every artifact, and gates all GitHub writes behind human approval.
 
 ## What's included
 
-- **privacy-guard** — AI-powered PII and privacy scanner
-- **refactoring-agent** — Issue-driven autonomous refactoring
-- **publish-agent** — Clean-room branch reviewer and publisher
-- **Skills** — publish-pull-request, privacy-scan, delegate-refactoring,
-  check-feature-support, plus vendored coding skills from echoskill
-- **Hooks** — Pre-push safety gates, test skill injection
-- **Safety architecture** — Three-layer enforcement (hooks + agent prompts + skills)
+- **privacy-guard** — Pre-push PII scanner (staged, unstaged, unpushed)
+- **privacy-audit** — Full-repo PII audit (git history, optionally issues/PRs)
+- **Skills** — safe-commit, check-feature-support, plus vendored coding
+  skills from echoskill
+- **Hooks** — Test skill injection
 
 ## Privacy Guard Agent
 
@@ -151,8 +149,6 @@ don't want it showing up in the global agent list:
 |-------|-------------|
 | `privacy-guard` | Pre-push PII scanner — staged diffs, unstaged diffs, unpushed commits |
 | `privacy-audit` | Full-repo PII audit — git history, optionally issues/PRs |
-| `refactoring-agent` | Autonomous issue-driven refactoring in isolated worktrees |
-| `publish-agent` | Clean-room branch review and merge+push |
 
 ### Testing agents
 
