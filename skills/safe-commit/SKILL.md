@@ -43,17 +43,14 @@ If anything looks wrong, stop and ask the user before proceeding.
 
 ### 3. Run privacy-guard agent
 
-Invoke the privacy-guard agent to scan staged changes, unstaged changes,
-and unpushed commits:
+Invoke the privacy-guard agent with just "scan this repo" — nothing
+more. Do NOT tell it what to scan, how to scan, or what to look for.
+The agent has its own instructions and will determine scope on its own.
 
-```
-Scan this repository for personal information leaks.
-```
-
-Use the `privacy-guard` subagent type. If the agent reports any findings
-with severity `high` or `medium`, **stop and report the findings to the
-user**. Do not commit until the user addresses them or explicitly
-approves committing with known findings.
+If the agent reports any findings with severity `high` or `medium`,
+**stop and report the findings to the user**. Do not commit until the
+user addresses them or explicitly approves committing with known
+findings.
 
 If the agent reports `partial` status (untracked files), warn the user
 but allow the commit to proceed — untracked files won't be in the
