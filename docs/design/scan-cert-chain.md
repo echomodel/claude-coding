@@ -155,20 +155,50 @@ until done. No interactive back-and-forth. `maxTurns` controls how
 many tool-call turns the subagent takes, not user messages. This
 should be verified empirically (workbench test).
 
+## Empirical findings (2026-04-06)
+
+All three hook types fire from plugin `hooks/hooks.json`:
+
+| Hook | Matcher | Data received |
+|------|---------|---------------|
+| PreToolUse | `Agent` | `tool_input.prompt` — the exact prompt going to the subagent |
+| PostToolUse | `Agent` | `tool_input.prompt` + `tool_response` (status, agentId) |
+| SubagentStop | (none/agent name) | `last_assistant_message`, `agent_transcript_path`, `agent_id` |
+
+Key findings:
+- Plugin hooks DO support SubagentStop (earlier test failures were
+  due to using `settings.json` instead of `settings.local.json` in
+  a project-level test — plugin hooks work fine)
+- PreToolUse sees the prompt BEFORE the subagent runs — can validate/block
+- PostToolUse sees the result AFTER — includes agentId for correlation
+- SubagentStop provides the transcript path for deep verification
+- The agentId in PostToolUse matches the agent_id in SubagentStop —
+  correlation confirmed
+
 ## Implementation components
 
 ### Plugin side (claude-coding-plugin)
 
-1. **SubagentStop hook** (`hooks/hooks.json`)
-   - Matcher: `privacy-guard`
-   - Script reads transcript, validates, writes cert
+Everything lives in the plugin — no project-level settings needed.
 
-2. **`push_scanned` MCP tool or skill**
-   - Resolves ref to SHA
-   - Checks cert
-   - Pushes `$sha:refs/heads/<branch>`
+1. **PreToolUse hook** (`hooks/hooks.json`, matcher: `Agent`)
+   - Validates prompt going to privacy-guard subagent
+   - Blocks if prompt contains tampering instructions
+   - Records prompt hash for correlation
 
-3. **Cert storage**
+2. **SubagentStop hook** (`hooks/hooks.json`, matcher: `privacy-guard`)
+   - Reads `agent_transcript_path` JSONL
+   - Verifies transcript has real tool calls (not faked)
+   - Reads `last_assistant_message` for scan result
+   - Computes `sha = git rev-parse HEAD`
+   - Writes cert to cache
+
+3. **PreToolUse hook** (`hooks/hooks.json`, matcher: `Bash(git push*)`)
+   - Reads cert from cache
+   - Computes current HEAD SHA
+   - Blocks push if cert missing or SHA mismatch
+
+4. **Cert storage**
    - Location: `~/.cache/claude-coding-plugin/`
    - Filename: `scan-<sha>.cert`
    - Content: `hash(seed + sha)` or just presence check
