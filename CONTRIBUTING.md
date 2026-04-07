@@ -67,7 +67,8 @@ composes reusable assets. The key principles:
 3. **Go vendor pattern for distribution** — `plugin/dist/` is
    committed to main so marketplace install works with no build step.
    `./build` regenerates it from source + vendored dependencies.
-   `./build --check` verifies it's current (CI gate).
+   In CI, `./build && git diff --exit-code plugin/dist/` verifies
+   the committed dist is current.
 
 4. **Dependency pinning without a new source of truth** — vendored
    skills are snapshots from the marketplace at a specific ref.
@@ -130,8 +131,7 @@ expects a working plugin at that ref. No build runs at install time.
 This matches Go's `vendor/` directory and protobuf generated code
 patterns — generated output committed for consumer convenience.
 
-`./build --check` verifies `plugin/dist/` matches what `./build` would
-produce. Use this in CI to catch stale vendored content.
+In CI, verify dist is current with `./build && git diff --exit-code plugin/dist/`.
 
 ### What goes where
 
