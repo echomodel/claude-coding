@@ -33,12 +33,11 @@ def _write_version(new_version: str) -> list[Path]:
     """Write new version to all version files. Returns files modified."""
     modified = []
     for path in VERSION_FILES:
-        if path == PLUGIN_JSON:
-            data = json.loads(path.read_text())
-            if data.get("version") != new_version:
-                data["version"] = new_version
-                path.write_text(json.dumps(data, indent=2) + "\n")
-                modified.append(path)
+        data = json.loads(path.read_text())
+        if data.get("version") != new_version:
+            data["version"] = new_version
+            path.write_text(json.dumps(data, indent=2) + "\n")
+            modified.append(path)
     return modified
 
 
