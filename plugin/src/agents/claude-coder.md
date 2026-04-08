@@ -7,6 +7,7 @@ skills:
   - capture-context
   - sociable-unit-tests
   - project-docs
+  - show-code
 ---
 
 # Claude Coder

@@ -68,26 +68,95 @@ other settings that may be present.
 
 ## Step 4: Update .gitignore
 
+Agent context directories (`.claude/`, `.gemini/`) contain a mix of
+versioned configuration and local-only state. The `.gitignore` must
+selectively include the files that should be shared while excluding
+everything else.
+
 Ensure these entries exist in `.gitignore`:
 
 ```
+.claude/
+!.claude/skills/
 .gemini/
 !.gemini/settings.json
 ```
 
-The `.gemini/` exclusion prevents committing local Gemini state files.
-The `!.gemini/settings.json` exception ensures the context configuration
-IS committed so all contributors and agents benefit from it.
+**Why each line matters:**
+- `.claude/` — excludes local Claude Code state (settings, cache, MCP config)
+- `!.claude/skills/` — re-includes project-scoped skills so they're versioned
+- `.gemini/` — excludes local Gemini state files
+- `!.gemini/settings.json` — re-includes context configuration
 
-## Step 5: Security scan before committing
+Only add the `.claude/skills/` exception if the project actually has or
+will have project-scoped skills. Don't pre-create it speculatively.
 
-Before staging `.gemini/settings.json` for commit, verify it contains no
-sensitive content: no absolute paths with usernames, no API keys, no
-credentials, no user-specific identifiers. The file should contain ONLY
-the `context.fileName` array pointing to standard repo files.
+## Step 5: Verify git tracking
 
-## Step 6: Report
+After modifying `.gitignore` or adding context/settings files for the
+first time, run `git status` and verify:
+
+1. **Expected files appear.** New or modified files under `.claude/` or
+   `.gemini/` should show as untracked or staged — not invisible. If a
+   file you just created doesn't appear in `git status`, the `.gitignore`
+   is still excluding it. Debug the ignore rules.
+
+2. **No unexpected files surfaced.** Changing `.gitignore` exclusion
+   patterns can expose files that were previously hidden. If ANY file
+   under `.claude/` or `.gemini/` newly appears in `git status` as a
+   result of a `.gitignore` change, evaluate it **case by case** before
+   proceeding. Do not batch-add or assume safety. Specific guidance:
+
+   - **`.claude/settings.json` and `.gemini/settings.json`** — version
+     these when they contain clean, portable, agent-helpful config:
+     `context.fileName` arrays, `allowedTools` lists, tool permissions,
+     or other settings that help collaborators and agents work
+     consistently. These are valuable to share. But read the full file
+     first — verify it contains no absolute paths with usernames,
+     credentials, API keys, or references to local-only MCP servers
+     by path. If clean: stage and commit. If not: clean it up or add
+     a specific ignore rule.
+   - **Cache, log, or state files** (e.g., `.cache/`, `*.log`,
+     session history, MCP connection state) — never version these.
+     They are ephemeral, machine-specific, and add noise. Add specific
+     ignore rules if they surface.
+   - **Any other file** under these directories that newly surfaces —
+     do not commit without reading its content and understanding why it
+     exists. When in doubt, add a specific ignore rule for it.
+
+3. **Confirm with `git check-ignore`.** For any file you expect to be
+   tracked, run `git check-ignore -v <path>` to confirm it is NOT
+   ignored. For files that should stay excluded, confirm they ARE ignored.
+
+## Step 6: Security scan before committing
+
+Before staging any file under `.claude/` or `.gemini/` for commit, scan
+its content for sensitive data:
+
+- **Absolute paths with usernames** — `/Users/<name>/`, `/home/<name>/`.
+  Replace with `~`, `$HOME`, or relative paths.
+- **API keys, tokens, credentials** — never commit these, even to
+  private repos.
+- **User-specific identifiers** — GCP project IDs, Google Doc IDs, email
+  addresses, account IDs.
+- **Local MCP server registrations** — `.claude/settings.json` often
+  contains `stdio` server entries with absolute paths to local
+  executables. These are not portable and should not be committed.
+- **Allowed-tool lists** — `.gemini/settings.json` may contain
+  `allowedTools` arrays. These are generally safe to commit (they help
+  collaborators), but verify they don't reference local-only MCP servers
+  by path.
+
+**The rule:** if a `.json` file under `.claude/` or `.gemini/` is being
+git-added for the first time or has changed after a `.gitignore` edit,
+read its full content and verify it contains nothing user-specific or
+sensitive before committing. This is especially important because these
+files are easy to commit reflexively with `git add .` without reviewing.
+
+## Step 7: Report
 
 Tell the user what was created or updated. Mention that both Claude Code
 and Gemini CLI will now load README.md and CONTRIBUTING.md as context, and
-that project-specific instructions belong in CONTRIBUTING.md.
+that project-specific instructions belong in CONTRIBUTING.md. If
+`.gitignore` was modified, note which files are now versioned and confirm
+no sensitive content was exposed.
