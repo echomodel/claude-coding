@@ -188,14 +188,14 @@ gemini skills install <url> --path coding
 
 Or individually:
 ```bash
-gemini skills install <url> --path coding/develop-skill
-aicfg skills install develop-skill
+gemini skills install <url> --path coding/skill-author
+echomodel skills install skill-author
 ```
 
 ## Installation
 
-Skills are installed via `aicfg skills install` (cross-platform) or
-`gemini skills install` (Gemini native). Claude has no skill CLI — aicfg
+Skills are installed via `echomodel skills install` (cross-platform) or
+`gemini skills install` (Gemini native). Claude has no skill CLI — echomodel
 writes directly to `~/.claude/skills/`.
 
 Both tools discover skills by scanning directories for `SKILL.md` files.
