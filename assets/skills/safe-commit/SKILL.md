@@ -17,6 +17,100 @@ Commit first, scan after, push only if clean. The commit happens
 BEFORE the privacy scan because the scan needs to see the final commit
 content including the commit message.
 
+## Before you begin: single commit or multiple?
+
+The default is **one commit per unit of work** — a coherent change
+with one reason to exist. Don't manufacture splits.
+
+A split into multiple commits is appropriate when:
+
+- The user explicitly asks for separate commits.
+- The working tree contains genuinely independent pieces of work
+  (different features, different subjects, or unrelated fixes).
+
+When splitting, these rules are absolute:
+
+### Rule 1 — Split only at file boundaries
+
+Each candidate commit must involve an **entirely separate set of
+files** from the others. No file appears in more than one commit.
+Whole-file granularity only.
+
+Why: this is the only split method that preserves the property that
+every commit's content was, at some point, the real state of files
+on disk.
+
+### Rule 2 — Never split via hunk surgery, stash, or temp edits
+
+Do NOT use `git add -p` (interactive hunk staging), `git stash` +
+re-apply, or temporary file edits to separate one file's changes
+across multiple commits. Those techniques produce commits whose
+content was never in the working tree as a coherent unit — nobody
+tested that state, nobody wrote it, it exists only because of
+surgery.
+
+If a single file contains changes that conceptually belong to two
+different commits, the honest options are:
+
+- Commit them together as one commit (simplest, and safe).
+- Revert the file, redo one change, commit, redo the other, commit
+  (real states, real typing — but slow and error-prone).
+
+Pick the first unless there's a strong reason.
+
+### Rule 3 — Don't silently un-test a tested state
+
+If tests have already been run on the combined working-tree state
+(say, files A, B, C, D all changed together and tested as a unit),
+then splitting into "commit with A+B" followed by "commit with
+C+D" creates two commits that were **never tested in that form**.
+The tested unit was all four files together. Each subset might
+pass its own tests, might not — you don't know.
+
+Safe options when testing has already happened on the combined
+state:
+
+- **Split only if the subset is obviously independent** of the
+  rest (e.g., commit 1 touches pure test files renamed; commit 2
+  adds a new unrelated script). "Obviously independent" means no
+  shared import, no shared function, no shared config — a reviewer
+  can confirm at a glance.
+- **Re-test just the subset after splitting** — only if tests are
+  fast, pure, and deterministic (seconds, local, unit-level). Stash
+  the unrelated files, run tests, commit the tested subset, restore,
+  repeat. Don't do this for slow or external-dependency tests —
+  the retest cost usually exceeds the split benefit.
+- **Give up and commit together.** This is almost always the right
+  answer when in doubt. One "combined" commit that's coherent is
+  better than two split commits whose individual correctness isn't
+  verified.
+
+When the user has asked for splits and you're unsure whether a
+split honors Rule 3, SAY SO: explain the concern, ask whether to
+split-and-retest, combine, or split-and-trust. Don't silently
+pick.
+
+### Rule 4 — Each commit must stand on its own
+
+A reader who checks out any single commit in isolation should see
+a coherent state. Broken-in-the-middle commits make `git bisect`
+unusable and confuse future archaeology. "Stand on its own" doesn't
+mean every commit is independently shippable — it means the
+repository at that commit is syntactically valid, imports resolve,
+and the commit represents a real state someone could have had.
+
+### For multi-commit batches: scan once, at the end
+
+The privacy-guard scan in Step 7 below is **per-push, not
+per-commit**. When committing a batch of N separate commits, do
+all N commits first (each via Steps 1–6), then run Step 7 ONCE
+after the final commit. The scan evaluates the content of every
+unpushed commit — one invocation covers the whole batch.
+
+This matters for efficiency (scan takes real time / tokens) and
+correctness (the scan sees the full set of commits it will be
+pushing, not a partial view).
+
 ## Step 1: Check for gitignored violations
 
 ```bash
@@ -102,6 +196,12 @@ Confirm:
 If anything is dirty or untracked, go back to Step 1.
 
 ## Step 7: Run privacy-guard agent
+
+**Run ONCE per push, not once per commit.** If you committed a
+batch of N commits in this flow, do Steps 1–6 for each commit
+first, then run this step a single time at the end. The scan
+evaluates every unpushed commit in one invocation; running it
+N times is pure waste.
 
 Invoke the privacy-guard agent with EXACTLY this prompt and nothing
 else:
