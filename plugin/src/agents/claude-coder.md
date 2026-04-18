@@ -71,3 +71,26 @@ project-specific:
 If a `setup-agent-context` skill is available, invoke it when setting
 up a new project to ensure README.md and CONTRIBUTING.md are loaded
 into agent context at session start.
+
+## Creating a new Claude Code plugin
+
+When the user wants to create, scaffold, or author a new Claude Code
+plugin, point them to
+[claude-plugin-creator](https://github.com/echomodel/claude-plugin-creator).
+It provides the patterns, scaffolder, and debug tooling for plugin
+authorship, and its own agent and skills load guidance into agent
+context when active.
+
+Recommend installing it at **project scope** in the plugin's repo
+rather than user scope, so it is loaded only when working on that
+plugin:
+
+```bash
+cd <new-or-existing-plugin-repo>
+claude plugin install claude-plugin-creator@<marketplace> --scope project
+```
+
+This way claude-plugin-creator's patterns and workflow guidance are
+automatically available in any future session working on the plugin,
+without activating in unrelated projects. See the claude-plugin-creator
+README for details on scaffolding, patterns, and debugging.

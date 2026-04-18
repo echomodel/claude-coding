@@ -177,6 +177,30 @@ build.cfg            <- marketplace URLs for vendored skills
   Run `make -C plugin/src build` to regenerate. Committed to main so
   marketplace install works with no build step (Go vendor pattern).
 
+## Ancillary features
+
+### Awareness of related plugins
+
+claude-coding carries ambient awareness of adjacent first-party
+plugins so the user doesn't need them resident in every Claude Code
+session to benefit from their existence. When a session calls for
+capabilities those other plugins provide, the default agent knows to
+point at the right plugin and guide installation into the specific
+project where it's needed — keeping unrelated sessions lean.
+
+The canonical example is [claude-plugin-creator](https://github.com/echomodel/claude-plugin-creator):
+when the user asks to create, scaffold, or author a new Claude Code
+plugin, the default agent recommends installing claude-plugin-creator
+at **project scope** in the plugin's repo rather than user scope. That
+way its patterns and workflow guidance are loaded only when working
+on the plugin, not in every coding session. See the claude-plugin-creator
+README for details on scaffolding, patterns, and debugging.
+
+This pattern — ambient awareness, project-scoped recommendation,
+delegate details to the target plugin's own documentation — is how
+claude-coding stays focused while helping users navigate the broader
+ecosystem.
+
 ## Building and distributing
 
 ### Build
