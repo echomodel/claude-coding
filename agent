@@ -81,14 +81,15 @@ def cmd_test(args):
     _resolve_agent(args.name)
     test_dir = _resolve_test_dir(args.name)
 
-    # Auto-create venv with test deps if missing
-    venv = REPO_ROOT / ".venv-test"
+    # Auto-create venv with test deps if missing — matches the
+    # setup documented in CONTRIBUTING.md for pytest.
+    venv = REPO_ROOT / ".venv"
     pytest_bin = venv / "bin" / "pytest"
     if not pytest_bin.exists():
-        print("Setting up test venv (one-time)...")
+        print("Setting up .venv (one-time)...")
         subprocess.run([sys.executable, "-m", "venv", str(venv)], check=True)
         subprocess.run([str(venv / "bin" / "pip"), "install", "-q",
-                        "pytest", "pytest-xdist"], check=True)
+                        "pytest", "pytest-xdist", "pyyaml"], check=True)
 
     cmd = [str(pytest_bin), str(test_dir)]
     if args.filter:

@@ -145,15 +145,21 @@ don't want it showing up in the global agent list:
 
 ### Testing agents
 
-See [docs/AGENT-CLI.md](docs/AGENT-CLI.md) for full `./agent` CLI
-documentation including install, test, filtering, parallelism, and
-debug logging.
+Two equivalent paths:
 
 ```bash
+# Direct pytest (requires the .venv setup documented in CONTRIBUTING.md)
+.venv/bin/pytest tests/integration/privacy_guard/
+
+# Standalone runner (pure stdlib, auto-bootstraps .venv on first run)
 ./agent test privacy-guard
 ./agent test privacy-guard -k test_email_in_staged_file
 ./agent test privacy-guard -n 5 --debug
 ```
+
+See [docs/AGENT-CLI.md](docs/AGENT-CLI.md) for the `./agent` CLI
+options. See [CONTRIBUTING.md](CONTRIBUTING.md#testing) for venv
+setup and the full test tier layout.
 
 ## Repository structure
 
@@ -195,8 +201,8 @@ on the plugin, not in every coding session.
 ```bash
 # 1. Bump version in .claude-plugin/plugin.json
 
-# 2. Test
-pytest tests/lint/
+# 2. Test (bare pytest runs the lint tier via pytest.ini)
+pytest
 
 # 3. Commit, tag, push
 git add -A

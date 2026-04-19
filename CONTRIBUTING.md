@@ -121,13 +121,34 @@ standalone via `./agent install <name>`.
 
 ## Testing
 
-Two test tiers:
+### Setup (one-time)
+
+Create `.venv/` with test dependencies:
+
+```bash
+python3 -m venv .venv
+.venv/bin/pip install pytest pytest-xdist pyyaml
+```
+
+The `.venv/` directory is gitignored. The `./agent test` CLI creates
+it automatically on first run if it doesn't exist — the manual
+setup above is only needed for running `pytest` directly.
+
+Activate it (or invoke via `.venv/bin/pytest`) for any of the
+commands below.
+
+### Test tiers
+
+Two tiers:
 
 ### Lint (default, fast)
 
 ```bash
-pytest tests/lint/
+.venv/bin/pytest
 ```
+
+Bare `pytest` runs the lint tier only — `pytest.ini` ignores
+`tests/integration/` and `tests/fixtures/` by default.
 
 Static validation of source files:
 - Agent `.md` files have valid frontmatter (name, description)
@@ -244,7 +265,7 @@ parameterization.
 # 1. Bump version in .claude-plugin/plugin.json
 
 # 2. Test
-pytest tests/lint/
+pytest
 
 # 3. Commit, tag, push
 git add -A
