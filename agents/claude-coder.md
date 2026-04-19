@@ -59,14 +59,14 @@ project-specific:
   organizations they own for a skills repo. If there is a skill or MCP
   tool available for working with and publishing to a skills marketplace,
   leverage that. Confirm the resolved approach with the user and save
-  it to memory so future sessions don't need to rediscover it. These
-  get vendored into plugins and projects via build configuration.
+  it to memory so future sessions don't need to rediscover it.
 - **Project-specific skills** belong in the project's `.claude/skills/`
   (or equivalent agent-local skill directory). These are not published
   and only apply when working in that project.
-- **Plugin-specific skills** belong in the plugin's source directory
-  (e.g., `plugin/src/` or equivalent). These ship with the plugin but
-  are not independently reusable.
+- **Plugin-specific skills** belong in the plugin repo's `skills/`
+  directory. These ship with the plugin because they directly depend
+  on its agents, hooks, or other machinery; they are not independently
+  reusable.
 
 If a `setup-agent-context` skill is available, invoke it when setting
 up a new project to ensure README.md and CONTRIBUTING.md are loaded

@@ -1,32 +1,32 @@
 # claude-coding
 
-Claude Code plugin with privacy-gated commits, session lifecycle
-management, and reusable agent/skill composition.
-
-## Two ways to use this
-
-1. **As a plugin** — install once, get everything: agents, skills, hooks,
-   safety gates. The plugin activates the **claude-coder** agent by
-   default, which preloads skills for safe commits, issue authoring,
-   session capture, and testing guidelines.
-2. **As standalone agents** — clone the repo, run one command, use any
-   agent from the CLI without installing the plugin. Reusable agents
-   live in `assets/agents/`.
+Claude Code plugin providing privacy-gated commits, the `privacy-guard`
+and `privacy-audit` agents, and a default `claude-coder` agent that
+composes with skills installed alongside it.
 
 ## What's included
 
 ### Agents
 
-- **privacy-guard** — pre-push PII scanner (staged, unstaged, unpushed)
-- **privacy-audit** — full-repo PII audit (git history, optionally issues/PRs)
-- **claude-coder** — default coding agent with privacy-gated commit workflow
+- **privacy-guard** — pre-push PII scanner (staged, unstaged, unpushed).
+- **privacy-audit** — full-repo PII audit (git history, optionally issues/PRs).
+- **claude-coder** — default coding agent with the privacy-gated commit
+  workflow.
 
-### Skills (8 total — 1 native, 7 vendored from echoskill)
+### Skills
 
-- **safe-commit** — commit-first workflow with privacy-guard scan gate
-- author-github-issue, capture-context, sociable-unit-tests,
-  identify-best-practices, check-feature-support, code-reuse,
-  setup-agent-context
+- **safe-commit** — commit-first workflow with a privacy-guard scan
+  gate. Native to this plugin because it invokes the `privacy-guard`
+  agent.
+- **show-code** — render a block of code in chat with the right
+  filetype for inline reference.
+
+The plugin does not redistribute general-purpose coding skills. The
+`claude-coder` agent's `skills:` frontmatter names skills like
+`author-github-issue`, `capture-context`, and `sociable-unit-tests`;
+those come from the [echoskill](https://github.com/echo-skill/echoskill)
+marketplace. Install echoskill alongside this plugin if you want those
+skills preloaded.
 
 ## Privacy Guard Agent
 
@@ -93,8 +93,8 @@ only on your machine.
 ## Install as plugin
 
 ```bash
-claude plugin marketplace add https://github.com/krisrowe/claude-plugins.git
-claude plugin install claude-coding@claude-plugins --scope user
+claude plugin marketplace add https://github.com/echomodel/claude-plugins.git
+claude plugin install claude-coding@echomodel --scope user
 ```
 
 ## Standalone agents (no plugin required)
@@ -115,7 +115,7 @@ claude --agent privacy-guard -p "scan this repo"
 ```
 
 The agent can scan any repo — just `cd` into it and run. To grant
-access to directories outside the repo (e.g., a sibling project):
+access to directories outside the repo:
 
 ```bash
 cd ~/src/my-project-a
@@ -157,29 +157,24 @@ debug logging.
 
 ## Repository structure
 
+The repo root **is** the plugin. No build step, no generated output.
+
 ```
-assets/              <- reusable, marketplaceable (source of truth)
-  agents/            <- portable agent definitions
-  skills/            <- portable skills (agentskills.io standard)
-plugin/
-  src/               <- authored plugin infrastructure
-  dist/              <- assembled output (committed, Go vendor pattern)
-build.cfg            <- marketplace URLs for vendored skills
+.claude-plugin/plugin.json    <- manifest and version
+agents/                       <- agent definitions
+skills/                       <- native skills (depend on this plugin's machinery)
+hooks/                        <- lifecycle hooks
+settings.json                 <- default agent activation
+.mcp.json                     <- MCP server config (empty by default)
+agent                         <- standalone-agent CLI
+tests/                        <- lint + integration tests
+docs/                         <- agent documentation
 ```
 
-- **`assets/`** — reusable agents and skills that can be published to
-  a marketplace independently. Marketplace entries can point directly
-  to paths here (e.g., `assets/agents/privacy-guard`).
-- **`plugin/src/`** — plugin-specific config, hooks, agents, and build
-  tooling. Includes `build.py`, `Makefile`, and `.claude-plugin/plugin.json`
-  (the version source of truth).
-- **`plugin/dist/`** — fully assembled plugin. **Never edit directly.**
-  Run `make -C plugin/src build` to regenerate. Committed to main so
-  marketplace install works with no build step (Go vendor pattern).
+Marketplace entries use `path: "."` — the clone IS the installable
+plugin.
 
-## Ancillary features
-
-### Awareness of related plugins
+## Awareness of related plugins
 
 claude-coding carries ambient awareness of adjacent first-party
 plugins so the user doesn't need them resident in every Claude Code
@@ -193,96 +188,27 @@ when the user asks to create, scaffold, or author a new Claude Code
 plugin, the default agent recommends installing claude-plugin-creator
 at **project scope** in the plugin's repo rather than user scope. That
 way its patterns and workflow guidance are loaded only when working
-on the plugin, not in every coding session. See the claude-plugin-creator
-README for details on scaffolding, patterns, and debugging.
+on the plugin, not in every coding session.
 
-This pattern — ambient awareness, project-scoped recommendation,
-delegate details to the target plugin's own documentation — is how
-claude-coding stays focused while helping users navigate the broader
-ecosystem.
-
-## Building and distributing
-
-### Build
-
-`make -C plugin/src build` assembles `plugin/dist/` from source files,
-plugin infrastructure, and vendored marketplace skills. You must run
-it before:
-
-- Using `--plugin-dir plugin/dist/` for local testing
-- Committing and pushing for marketplace references to work
-- Tagging a release
+## Release workflow
 
 ```bash
-make -C plugin/src build
-```
-
-### Local testing (no marketplace)
-
-```bash
-claude --plugin-dir plugin/dist/
-```
-
-### Marketplace registration
-
-To make this plugin installable via a Claude Code plugin marketplace,
-add an entry to the marketplace's `marketplace.json` pointing to the
-`plugin/dist` subdirectory:
-
-```json
-{
-  "name": "claude-coding",
-  "source": {
-    "source": "git-subdir",
-    "url": "https://github.com/echomodel/claude-coding.git",
-    "path": "plugin/dist"
-  },
-  "description": "Coding agent with privacy-gated commits and skill composition."
-}
-```
-
-After committing and pushing the marketplace repo, users install with:
-
-```bash
-claude plugin marketplace update <marketplace-name>
-claude plugin install claude-coding@<marketplace-name> --scope user
-```
-
-### Release workflow
-
-```bash
-# 1. Build with version bump
-make -C plugin/src build VERSION=X.Y.Z
+# 1. Bump version in .claude-plugin/plugin.json
 
 # 2. Test
-pytest tests/lint/ tests/build/
+pytest tests/lint/
 
 # 3. Commit, tag, push
 git add -A
 git commit -m "Release vX.Y.Z"
 git tag -a vX.Y.Z -m "Release vX.Y.Z"
 git push origin main --tags
+
+# 4. Update the marketplace entry's ref to the new tag, commit and push
+#    the marketplace repo, then reinstall the plugin.
 ```
-
-The `VERSION` argument stamps the new version in
-`plugin/src/.claude-plugin/plugin.json` before building. The build
-propagates it to `plugin/dist/`. Without `VERSION`, builds use the
-current version in src.
-
-After pushing, update the marketplace ref and reinstall the plugin.
-
-### Marketplace updates
-
-Marketplace solutions like Claude Code's `plugin install` resolve
-plugins by git ref. If the marketplace entry has no `ref`, it uses
-the default branch (main). If it specifies `ref: "v1.2.0"`, it uses
-that tag. Either way, the committed `plugin/dist/` at that ref must
-be current — there is no build step at install time.
-
-After pushing a new tag, update the marketplace entry's `ref` if it
-pins to a specific tag.
 
 ## Development
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for testing tiers, architecture,
-and development workflow.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for architecture details,
+testing, and development workflow.

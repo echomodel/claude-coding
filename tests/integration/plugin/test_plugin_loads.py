@@ -15,7 +15,6 @@ from pathlib import Path
 import pytest
 
 PLUGIN_ROOT = Path(__file__).resolve().parent.parent.parent.parent
-PLUGIN_DIR = PLUGIN_ROOT / "plugin" / "dist"
 
 # Skills that only exist in this plugin — if any show up, the plugin loaded
 PLUGIN_SKILLS = ["safe-commit"]
@@ -31,7 +30,7 @@ class TestPluginLoads:
 
         cmd = [
             "claude",
-            "--plugin-dir", str(PLUGIN_DIR),
+            "--plugin-dir", str(PLUGIN_ROOT),
             "-p", "List every skill available to you. Just the names, one per line.",
             "--max-turns", "1",
         ]

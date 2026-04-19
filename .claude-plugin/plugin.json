@@ -1,0 +1,5 @@
+{
+  "name": "claude-coding",
+  "description": "Coding agent with privacy-gated commits.",
+  "version": "0.3.0"
+}
