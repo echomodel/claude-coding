@@ -203,8 +203,7 @@ first, then run this step a single time at the end. The scan
 evaluates every unpushed commit in one invocation; running it
 N times is pure waste.
 
-Invoke the privacy-guard agent with EXACTLY this prompt and nothing
-else:
+The prompt for the agent is EXACTLY:
 
 ```
 scan this repo
@@ -214,6 +213,36 @@ Do NOT add instructions about what to scan, how to scan, what to look
 for, or any other context. The agent has its own instructions. Adding
 to the prompt risks overriding the agent's behavior and will cause
 the scan verification to fail.
+
+### How to invoke: choose ONE path
+
+privacy-guard reads `~/.config/ai-common/PERSON.md`, which lives
+outside any project directory. The Agent tool route only works when
+the parent Claude Code session was launched with access to that path
+(e.g., `claude --add-dir ~/.config/ai-common`). The normal case —
+session started inside a repo — has no such access, and the subagent
+will fail with `person_md_not_found`. **Don't try the Agent tool
+route and fall back; pick the right path up front.**
+
+**Default path (terminal command).** When the parent session was
+started in a project directory without `--add-dir ~/.config/ai-common`,
+do NOT invoke the Agent tool. Instead, present this command for the
+user to run in their own terminal:
+
+```bash
+cd <repo-path> && claude --agent privacy-guard --add-dir ~/.config/ai-common -p "scan this repo"
+```
+
+The user runs it; you read the JSON output they paste back (or, in
+Claude Code, the command output appears in the conversation if
+prefixed with `!`).
+
+**Agent tool path (only if access is already granted).** If you can
+verify the parent session has read access to `~/.config/ai-common/`
+(e.g., the session was launched with `--add-dir ~/.config/ai-common`
+or from `$HOME`), invoke the privacy-guard agent directly with the
+prompt above. If unsure, default to the terminal command — guessing
+wrong wastes a subagent invocation.
 
 ## Step 8: Interpret scan results
 
@@ -262,31 +291,13 @@ If the privacy-guard agent is not installed or fails to run, tell the
 user. No scan means no push. There is no fallback. Install the agent
 and retry.
 
-## When privacy-guard fails with "person_md_not_found"
+## If privacy-guard still fails with "person_md_not_found"
 
-The privacy-guard agent requires `~/.config/ai-common/PERSON.md` to
-load personal patterns. This file lives outside any project directory,
-so sandbox restrictions may block access.
-
-**If running as a subagent (Step 7):** The subagent inherits the
-parent session's working directory permissions. If the parent session
-was started from a project directory, the
-subagent cannot read `~/.config/`. Tell the user to run the scan
-from the terminal instead:
-
-```bash
-cd <repo-path> && claude --agent privacy-guard --add-dir ~/.config/ai-common -p "scan this repo"
-```
-
-**If running from the terminal:** Use `--add-dir` to grant access:
-
-```bash
-claude --agent privacy-guard --add-dir ~/.config/ai-common -p "scan this repo"
-```
-
-The `--add-dir` flag grants the agent read access to the specified
-directory for that session only. The prompt must still be exactly
-"scan this repo" — do not modify it.
+This means the user has not created `~/.config/ai-common/PERSON.md`,
+or the path passed to `--add-dir` was wrong. See the
+[claude-coding README](https://github.com/echomodel/claude-coding#prerequisite-personal-patterns-file)
+for the PERSON.md format. Without that file, privacy-guard refuses
+to run. No scan means no push.
 
 ## Post-push rescan
 
