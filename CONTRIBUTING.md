@@ -275,7 +275,20 @@ git push origin main --tags
 
 # 4. Update the marketplace entry's ref to the new tag, commit and push
 #    the marketplace repo, then reinstall the plugin.
+
+# 5. Verify the release landed.
+claude plugin marketplace update <marketplace-name>
+claude plugin update claude-coding@<marketplace-name>
+# Confirm the active install path points at the new version:
+grep -A4 '"claude-coding@' ~/.claude/plugins/installed_plugins.json
+# Expected: "installPath" ends in /<new-version> and "version" is the new tag.
 ```
+
+`installed_plugins.json` is the source of truth for which version a
+new session loads. Old version directories under
+`~/.claude/plugins/cache/<marketplace>/claude-coding/` are leftover
+artifacts and do not indicate the active version — never infer the
+active version from those paths.
 
 ## Agent definitions
 
