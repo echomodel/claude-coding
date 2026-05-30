@@ -230,12 +230,17 @@ do NOT invoke the Agent tool. Instead, present this command for the
 user to run in their own terminal:
 
 ```bash
-cd <repo-path> && claude --agent privacy-guard --add-dir ~/.config/ai-common -p "scan this repo"
+cd <repo-path> && claude --agent privacy-guard --add-dir ~/.config/ai-common --no-session-persistence -p "scan this repo"
 ```
 
 The user runs it; you read the JSON output they paste back (or, in
 Claude Code, the command output appears in the conversation if
 prefixed with `!`).
+
+`--no-session-persistence` keeps the scan transitory — the run is a
+one-shot verification whose result is consumed immediately, so it
+leaves no resumable session JSONL behind to clutter the session list.
+The flag only takes effect with `-p`.
 
 **Agent tool path (only if access is already granted).** If you can
 verify the parent session has read access to `~/.config/ai-common/`
@@ -331,7 +336,7 @@ The scan must be run by the user from a shell, not from within an
 existing agent session (subprocesses may lack file permissions):
 
 ```bash
-claude --agent privacy-guard --add-dir ~/.config/ai-common -p "scan this repo"
+claude --agent privacy-guard --add-dir ~/.config/ai-common --no-session-persistence -p "scan this repo"
 ```
 
 If the repo being scanned is different from the current working
