@@ -216,6 +216,10 @@ Specifically:
 2. **Unstaged tracked changes** — `git diff` (assumed to be staged imminently)
 3. **Unpushed commits** — `git log @{upstream}..HEAD -p` (if upstream exists)
 
+**Out of scope: commit author and committer.** Don't look up or report
+the name or email a commit is signed with — the git pre-commit hook
+checks the configured identity. Commit messages and diffs stay in scope.
+
 All three are treated equally as findings. Do NOT run `git ls-files`
 or Read individual files — the diffs and unpushed commits are the
 complete picture.
