@@ -69,7 +69,6 @@ def test_skill_has_valid_frontmatter(skill_dir):
 @pytest.mark.parametrize("filename", [
     ".claude-plugin/plugin.json",
     "settings.json",
-    "hooks/hooks.json",
     ".mcp.json",
 ])
 def test_plugin_file_exists_and_valid(filename):

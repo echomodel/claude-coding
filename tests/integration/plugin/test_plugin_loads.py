@@ -17,7 +17,7 @@ import pytest
 PLUGIN_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 
 # Skills that only exist in this plugin — if any show up, the plugin loaded
-PLUGIN_SKILLS = ["safe-commit"]
+PLUGIN_SKILLS = ["show-code"]
 
 
 class TestPluginLoads:
